@@ -241,12 +241,12 @@ def plot_average_IV(data, fi, label):
         vstep=large_pads[mask]
         averages.append(np.average(vstep[:,2]))
         lower.append(np.average(vstep[:,2])-np.std(vstep[:,2]))
-        upperappend(np.average(vstep[:,2])+np.std(vste[:,2]p))
+        upper.append(np.average(vstep[:,2])+np.std(vstep[:,2]))
     fig,ax = plt.subplots()
     # make a plot
     ax.fill_between(voltages, lower, upper, alpha=0.2)
     ax.plot(voltages, averages, "-")
-    ax.set_title("Average "+label +)
+    ax.set_title("Average "+label + "Profile")
     if label =="IV":
         ax.set_ylabel("Current (nA)")
     if label=="CV":
