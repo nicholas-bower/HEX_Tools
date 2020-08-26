@@ -146,11 +146,11 @@ def plot_CV_Corr(data, corr, channel, name):
     corr = corr[mask]
     invCVSq=[]
     CVcorr = []
-
     for i in range(len(data[:,0])):
         if data[i,0]>-300:
             iCor=corr[corr[:,0]==data[i,0]]
         else: iCor=corr[corr[:,0]==-300]
+
         iData=(data[i,2])-((iCor[0,2]))
         CVcorr.append(iData)
         invCVSq.append(1/(iData**2))
@@ -178,7 +178,7 @@ def plot_Channels(channels, corr,IV_data, CV_data, fi):
     for c in channels:
         plot_singleChannel(IV_data, c, fi, 'IV')
         plot_singleChannel(CV_data, c, fi, 'CV')
-        #plot_CV_Corr(CV_data, corr, c, fi)
+        plot_CV_Corr(CV_data, corr, c, fi)
 
 def plot_Humidity(data, fi):
     humidity = data[:,8]
