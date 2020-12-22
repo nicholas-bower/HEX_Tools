@@ -4,6 +4,10 @@ import itertools
 import matplotlib.pyplot as plt
 import os
 import glob
+from matplotlib import rc
+
+#rc('font', **{'family':'serif','serif':['Palatino']})
+#rc('text', usetex=True)
 
 def checkAndMakeDir(dir):
     if not os.path.exists(dir):
@@ -28,20 +32,23 @@ def readfile(infile):
         except:
             continue
         i+=1
-    mask = [data[:,2]!=0]
+    mask = np.zeros(len(data), dtype = bool)
+    mask=[data[:,2]!=0]
     f.close()
-    return data[mask]
+    return data[tuple(mask)]
 def plot_IV_By_Channel(data, name, mask_abov, corr, CV):
+    outfolder = name+"IV_by_Channel/"
+    checkAndMakeDir(outfolder)
     voltages = set(data[:,0])
     voltages = sorted(voltages)
     fig = plt.figure()
     ax  = fig.add_subplot(111)
     colors = itertools.cycle(['r', 'b', 'g','m','c','y','k'])
     activepad_mask = [data[:,1]<199]
-    data=data[activepad_mask]
+    data=data[tuple(activepad_mask)]
     for v,col in zip(voltages,colors):
         v_mask = [data[:,0]==v]
-        v_data = data[v_mask]
+        v_data = data[tuple(v_mask)]
         color = next(colors)
         ax.plot(v_data[:,1], v_data[:,2], color, label = str(v)+'V')
     ax.set_title('IV by Channel')
@@ -51,7 +58,7 @@ def plot_IV_By_Channel(data, name, mask_abov, corr, CV):
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.savefig(name+ '_byChannel.png')
+    plt.savefig(outfolder+ '_byChannel.png')
     plt.close('all')
     fig2=plt.figure()
     ax2 = fig2.add_subplot(111)
@@ -59,7 +66,7 @@ def plot_IV_By_Channel(data, name, mask_abov, corr, CV):
     abscurrent[:]= [abs(ele) for ele in (data[:,2])]
 
     badpad_mask = [(abscurrent[:]>mask_abov) ]# find the cells with current greater than 10000 when the voltage has reached 100
-    badpads = data[badpad_mask]
+    badpads = data[tuple(badpad_mask)]
     plot_Channels(badpads[:,1], corr, data, CV, name)
     badcells = set(badpads[:,1])
     test=np.zeros(len(data), dtype = bool)
@@ -67,7 +74,7 @@ def plot_IV_By_Channel(data, name, mask_abov, corr, CV):
     good_data=data[test]
     for v,col in zip(voltages,colors):
         v_mask = [good_data[:,0]==v]
-        v_data = good_data[v_mask]
+        v_data = good_data[tuple(v_mask)]
         color = next(colors)
         ax2.plot(v_data[:,1], v_data[:,2], color, label = str(v)+'V')
     ax2.set_title('IV by Channel[With \'Bad\' Channls removed]')
@@ -80,19 +87,21 @@ def plot_IV_By_Channel(data, name, mask_abov, corr, CV):
     ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
 
-    plt.savefig(name+'_sortedByChannel.png')
+    plt.savefig(outfolder+'_sortedByChannel.png')
     plt.close('all')
 def plot_totalCurrent(data, name):
+    outfolder = name+"total_current/"
+    checkAndMakeDir(outfolder)
     voltages = set(data[:,0])
     voltages = sorted(voltages)
     fig = plt.figure()
     ax  = fig.add_subplot(111)
     colors = itertools.cycle(['r', 'b', 'g','m','c','y','k'])
     activepad_mask = [data[:,1]<199]
-    activepad=data[activepad_mask]
+    activepad=data[tuple(activepad_mask)]
     for v,col in zip(voltages,colors):
         v_mask = [activepad[:,0]==v]
-        v_data = activepad[v_mask]
+        v_data = activepad[tuple(v_mask)]
         color = next(colors)
         ax.plot(v_data[:,1], v_data[:,4], color, label = str(v)+'V')
     ax.set_title('Total Current')
@@ -102,12 +111,14 @@ def plot_totalCurrent(data, name):
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.savefig(name+ '_TotalCurrent.png')
+    plt.savefig(outfolder+ '_TotalCurrent.png')
     
     plt.close('all')
 def plot_singleChannel(data, channel, name, t):
+    outfolder = name+"SingleChannel"+t+"_Uncorrected/"
+    checkAndMakeDir(outfolder)
     mask = [data[:,1]==channel]
-    data=data[mask]
+    data=data[tuple(mask)]
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(data[:,0], data[:,2])
@@ -116,13 +127,13 @@ def plot_singleChannel(data, channel, name, t):
         ax.set_title('IV Channel: '+ str(channel))
         ax.set_xlabel('Voltage (V)')
         ax.set_ylabel('I(na)')
-        plt.savefig(name+ '_Channel_' + str(channel)+t+'.png')
+        plt.savefig(outfolder+ '_Channel_' + str(channel)+t+'.png')
         plt.close('all')
     elif t=='CV':
         ax.set_title('CV Channel: '+ str(channel))
         ax.set_xlabel('Voltage (V)')
         ax.set_ylabel('C(pF)')
-        plt.savefig(name+ '_Channel_' + str(channel)+t+'.png')
+        plt.savefig(outfolder+ '_Channel_' + str(channel)+t+'.png')
         plt.close('all')
 
         for x in data[:,2]:
@@ -133,28 +144,32 @@ def plot_singleChannel(data, channel, name, t):
         ax2.set_title('InvSq CV, Channel: '+ str(channel))
         ax2.set_xlabel('Voltage (V)')
         ax2.set_ylabel('1/C^2(pF)')
-        plt.savefig(name+ '_Channel_INVCV' + str(channel)+t+'.png')
+        plt.savefig(outfolder+ '_Channel_INVCV' + str(channel)+t+'.png')
         plt.close('all')
 
 
     
 def plot_CV_Corr(data, corr, channel, name):
+    outfolder = name+"CVCorrected_Individual_Channels/"
+    checkAndMakeDir(outfolder)
     mask= [data[:,1]==channel]
-    data=data[mask]
+    data=data[tuple(mask)]
 
     mask = [corr[:,1]==channel]
-    corr = corr[mask]
+    corr = corr[tuple(mask)]
     invCVSq=[]
     CVcorr = []
     for i in range(len(data[:,0])):
-        if data[i,0]>-300:
+        if data[i,0]>-220:
             iCor=corr[corr[:,0]==data[i,0]]
-        else: iCor=corr[corr[:,0]==-300]
-
+        else: iCor=corr[corr[:,0]==-220]
+        if len(iCor)<1:
+            print ("CV Correction missing for V="+str(data[i,0])+"V. Terminating CV Correction.")
+            break
         iData=(data[i,2])-((iCor[0,2]))
         CVcorr.append(iData)
         invCVSq.append(1/(iData**2))
-        if data[i,0]==-400:
+        if data[i,0]==-200:
             print ("Cell " +str(channel)+" Cpf = " + str(iData))
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -162,7 +177,7 @@ def plot_CV_Corr(data, corr, channel, name):
     ax.set_title('CV Channel: '+ str(channel))
     ax.set_xlabel('Voltage (V)')
     ax.set_ylabel('C(pF)')
-    plt.savefig(name+ '_Channel_' + str(channel)+'_Corrected.png')
+    plt.savefig(outfolder+ '_Channel_' + str(channel)+'_Corrected.png')
     plt.close('all')
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(111)
@@ -171,7 +186,7 @@ def plot_CV_Corr(data, corr, channel, name):
     ax2.set_title('CORRECTED invSq CV Channel: '+ str(channel))
     ax2.set_xlabel('Voltage (V)')
     ax2.set_ylabel('1/C^2(pF)')
-    plt.savefig(name+ '_Channel_INVCVSq_' + str(channel)+'_Corrected.png')
+    plt.savefig(outfolder+ '_Channel_INVCVSq_' + str(channel)+'_Corrected.png')
     plt.close('all')
 
 def plot_Channels(channels, corr,IV_data, CV_data, fi):
@@ -181,6 +196,8 @@ def plot_Channels(channels, corr,IV_data, CV_data, fi):
         plot_CV_Corr(CV_data, corr, c, fi)
 
 def plot_Humidity(data, fi):
+    outfolder = fi+"Enviromental_Data/"
+    checkAndMakeDir(outfolder)
     humidity = data[:,8]
     time = data[:,6]
     temp = data[:,7]
@@ -201,7 +218,7 @@ def plot_Humidity(data, fi):
     ax2.set_ylim(45,53)
 
     # save the plot as a file
-    fig.savefig(fi+'_Enviromental.png',
+    fig.savefig(outfolder+'_Enviromental.png',
             format='png',
             dpi=100,
             bbox_inches='tight')
@@ -209,6 +226,8 @@ def plot_Humidity(data, fi):
 def calc_GRIV(data, fi):
     voltages = set(data[:,0])
     voltages = sorted(voltages)
+    outfolder = fi+"GR_Extrapolation/"
+    checkAndMakeDir(outfolder)
     I_GR=[]
     I_Total = []
     I_Sum = []
@@ -237,19 +256,32 @@ def calc_GRIV(data, fi):
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.savefig(fi+ '_GR_EST.png')
+    plt.savefig(outfolder+ '_GR_EST.png')
     plt.close('all')
-def plot_average_profile_IV(data, fi, threshold):
+def plot_average_profile_IV(data, fi, threshold, isHD):
+    outfolder = fi+"Average_IV_Profile/"
+    checkAndMakeDir(outfolder)
     voltages = set(data[:,0])
     voltages = sorted(voltages)
-    small_pads = [1,2,3,4,5,6,7,8,18,28,39,51,65,80,95,111,126,
-    140,155,168,179,189,197,196,195,194,193,192,191,190,180,169,
-    156,141,127,112,96,81,66,52,40,29,19,9, 13,14,69,70,61,62,142,
-    143,153,154,162,163]
+    if isHD:
+        small_pads = [1,2,3,4,5,6,7,8,9,10,12,13,26,42,57,73,91,109,128,148,
+        171,193,217,241,265,288,310,3301,349,367,385,402,418,432,
+        433,435,436,437,438,439,
+        440,441,442,443,444,431,417,401,384,366,448,329,309,287,264,240,
+        216,192,170,147,127,108,90,72,46,41,25,29,30,36,37,87,88,150,151,158,157,
+        207,208,267,268,261,262,297,298,381,382,411,412]
+        gr=445
+    else:
+        small_pads = [1,2,3,4,5,6,7,8,18,28,39,51,65,80,95,111,126,
+        140,155,168,179,189,197,196,195,194,193,192,191,190,180,169,
+        156,141,127,112,96,81,66,52,40,29,19,9, 13,14,69,70,61,62,142,
+        143,153,154,162,163]
+        gr = 199
     pad_mask=np.zeros(len(data), dtype = bool)
     pad_mask[:] = [pad not in small_pads for pad in data[:,1]]
     large_pads =data[pad_mask]
-    large_pads = large_pads[large_pads[:,1]<199]#Remove Gaurdring and other pads
+
+    large_pads = large_pads[large_pads[:,1]<gr]#Remove Gaurdring and other pads
     averages = []
     upper = []
     lower = []
@@ -258,7 +290,7 @@ def plot_average_profile_IV(data, fi, threshold):
         abscurrent[:]= [abs(ele) for ele in (large_pads[:,2])]
 
         threshold_mask = [(abscurrent[:]>threshold) ]# find the cells with current greater than 10000 when the voltage has reached 100
-        badpads = large_pads[threshold_mask]
+        badpads = large_pads[tuple(threshold_mask)]
         badcells = set(badpads[:,1])
         badcell_mask=np.zeros(len(large_pads), dtype = bool)
         badcell_mask[:]= [ele not in badcells for ele in large_pads[:,1]]
@@ -266,7 +298,7 @@ def plot_average_profile_IV(data, fi, threshold):
 
     for v in voltages:
         mask = [large_pads[:,0]==v]
-        vstep=large_pads[mask]
+        vstep=large_pads[tuple(mask)]
         averages.append(np.average(vstep[:,2]))
         lower.append(np.average(vstep[:,2])-np.std(vstep[:,2]))
         upper.append(np.average(vstep[:,2])+np.std(vstep[:,2]))
@@ -278,43 +310,120 @@ def plot_average_profile_IV(data, fi, threshold):
         ax.set_title("Average IV Profile")
         ax.set_ylabel("Current (nA)")
         ax.set_xlabel("Voltage (V)")
-        plt.savefig(fi+ '_Average_Profile_IV.png')
+        plt.savefig(outfolder+ '_Average_Profile_IV.png')
     else:
         ax.set_title("Average IVProfile [Highchannels removed]")
         ax.set_ylabel("Current (nA)")
         ax.set_xlabel("Voltage (V)")
-        plt.savefig(fi+ '_Average_Profile_IV_Highchannels_Removed.png')
+        plt.savefig(outfolder+ '_Average_Profile_IV_Highchannels_Removed.png')
     plt.close('all')
-def plot_average_profile_CV(data, fi):
+def plot_average_profile_CV(data, fi, corr, isHD):
+    outfolder = fi+"Average_CV_Profile/"
+    checkAndMakeDir(outfolder)
 
     voltages = set(data[:,0])
     voltages = sorted(voltages)
-    small_pads = [1,2,3,4,5,6,7,8,18,28,39,51,65,80,95,111,126,
-    140,155,168,179,189,197,196,195,194,193,192,191,190,180,169,
-    156,141,127,112,96,81,66,52,40,29,19,9, 13,14,69,70,61,62,142,
-    143,153,154,162,163]
+    if isHD:
+        small_pads = [1,2,3,4,5,6,7,8,9,10,12,13,26,42,57,73,91,109,128,148,
+        171,193,217,241,265,288,310,3301,349,367,385,402,418,432,
+        433,435,436,437,438,439,
+        440,441,442,443,444,431,417,401,384,366,448,329,309,287,264,240,
+        216,192,170,147,127,108,90,72,46,41,25,29,30,36,37,87,88,150,151,158,157,
+        207,208,267,268,261,262,297,298,381,382,411,412]
+        gr=445
+    else:
+        small_pads = [1,2,3,4,5,6,7,8,18,28,39,51,65,80,95,111,126,
+        140,155,168,179,189,197,196,195,194,193,192,191,190,180,169,
+        156,141,127,112,96,81,66,52,40,29,19,9, 13,14,69,70,61,62,142,
+        143,153,154,162,163]
+        gr = 199
     pad_mask=np.zeros(len(data), dtype = bool)
     pad_mask[:] = [pad not in small_pads for pad in data[:,1]]
     large_pads =data[pad_mask]
     large_pads = large_pads[large_pads[:,1]<199]#Remove Gaurdring and other pads
-    averages = []
-    upper = []
-    lower = []
-    for v in voltages:
-        mask = [large_pads[:,0]==v]
-        vstep=large_pads[mask]
-        averages.append(np.average(vstep[:,2]))
-        lower.append(np.average(vstep[:,2])-np.std(vstep[:,2]))
-        upper.append(np.average(vstep[:,2])+np.std(vstep[:,2]))
+    pad_mask=np.zeros(len(corr), dtype = bool)
+    pad_mask[:] = [pad in large_pads for pad in corr[:,1]]
+    corr_largepad=corr[pad_mask]
+    CV_avg =np.zeros((len(voltages),3), float)
+    CV_corr = np.zeros((len(voltages),6), float)
+
+    for v in range(0,len(voltages)):
+        mask = [large_pads[:,0]==voltages[v]]
+        vstep=large_pads[tuple(mask)]
+        if voltages[v]>-220:
+            mask = [corr_largepad[:,0]==voltages[v]]
+        else: mask = [corr_largepad[:,0]==-220]
+        corr_vstep=corr_largepad[tuple(mask)]
+        if len(corr_vstep)<1:
+            print ("CV Correction missing for V="+str(voltages[v])+"V. Terminating CV Correction\n")
+            break
+        CV_corr_vstep = np.zeros((len(vstep),2), float)
+        for i in range(len(vstep[:,2])):
+            CV_corr_vstep[i,0]=vstep[i, 2]-corr_vstep[i, 2]
+            CV_corr_vstep[i,1]=CV_corr_vstep[i,0]**-2
+        m= np.average(CV_corr_vstep[:,0])
+        u = m + np.std(CV_corr_vstep[:,0])
+        d = m - np.std(CV_corr_vstep[:,0])
+        CV_corr[v,:3]=[m,u,d]
+        m= np.average(CV_corr_vstep[:,1])
+        u = m + np.std(CV_corr_vstep[:,1])
+        d = m - np.std(CV_corr_vstep[:,1])
+        CV_corr[v,3:6]=[m,u,d]
+        m= np.average(vstep[:,2])
+        u = m + np.std(vstep[:,2])
+        d = m - np.std(vstep[:,2])
+        CV_avg[v,:]=[m,u,d]
+    
 
     fig,ax = plt.subplots()
     # make a plot
-    ax.fill_between(voltages, lower, upper, alpha=0.2)
-    ax.plot(voltages, averages, "-")
+    ax.fill_between(voltages, CV_corr[:,2], CV_corr[:,1],  label=r'$\sigma$',alpha=0.2)
+    ax.plot(voltages, CV_corr[:,0], "-",label = r'Average')
+    ax.set_title("Average CV Profile[Corrected]")
+    ax.set_ylabel("C (pF)")
+    ax.set_xlabel("Voltage (V)")
+    plt.savefig(fi+ '_Average_Profile_CV_CORRECTED.png')
+    plt.close('all')
+    fig,ax = plt.subplots()
+    # make a plot
+    ax.fill_between(voltages, CV_corr[:,5], CV_corr[:,4],  label=r'$\sigma$',alpha=0.2)
+    ax.plot(voltages, CV_corr[:,3], "-",label = r'Average')
+    ax.set_title("Average CV-2 Profile[Corrected]")
+    ax.set_ylabel(r"$C^{-2} (pF^{-2})$")
+    ax.set_xlabel("Voltage (V)")
+    plt.savefig(outfolder+ '_Average_Profile_CV-2_CORRECTED.png')
+    plt.close('all')
+    ##
+    ax.fill_between(voltages, CV_avg[:,2], CV_avg[:,1],  label=r'$\sigma$',alpha=0.2)
+    ax.plot(voltages, CV_avg[:,0], "-",label = r'Average')
     ax.set_title("Average CV Profile")
     ax.set_ylabel("C (pF)")
     ax.set_xlabel("Voltage (V)")
-    plt.savefig(fi+ '_Average_Profile_CV.png')
+    plt.savefig(outfolder+ '_Average_Profile_CV.png')
     plt.close('all')
+    fig,ax = plt.subplots()
 
+def plot_CV_ByChannel(data, name, wafer):
+    checkAndMakeDir(name+"CV_ByChannel/")
+    voltages = set(data[:,0])
+    voltages = sorted(voltages)
+    fig = plt.figure()
+    ax  = fig.add_subplot(111)
+    colors = itertools.cycle(['r', 'b', 'g','m','c','y','k'])
+    activepad_mask = [data[:,1]<199]
+    activepad=data[tuple(activepad_mask)]
+    for v,col in zip(voltages,colors):
+        v_mask = [activepad[:,0]==v]
+        v_data = activepad[tuple(v_mask)]
+        color = next(colors)
+        ax.plot(v_data[:,1], v_data[:,4], color, label = str(v)+'V')
+    ax.set_title('Capacitance By Channel, Wafer No '+wafer)
+    ax.set_ylabel('Cp (pf)')
+    ax.set_xlabel('Channel')
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.savefig(name+ 'CV_ByChannel/CapacitanceBy channel.png')
+    
+    plt.close('all')
