@@ -1,4 +1,3 @@
-
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
@@ -36,7 +35,7 @@ def readfile(infile):
     mask=[data[:,2]!=0]
     f.close()
     return data[tuple(mask)]
-def plot_IV_By_Channel(data, name, mask_abov, corr, CV):
+def plot_IV_By_Channel(data, name, mask_abov, corr, CV,wafer):
     outfolder = name+"IV_by_Channel/"
     checkAndMakeDir(outfolder)
     voltages = set(data[:,0])
@@ -51,45 +50,54 @@ def plot_IV_By_Channel(data, name, mask_abov, corr, CV):
         v_data = data[tuple(v_mask)]
         color = next(colors)
         ax.plot(v_data[:,1], v_data[:,2], color, label = str(v)+'V')
-    ax.set_title('IV by Channel')
+    ax.set_title('IV by Channel'+"[" +wafer+"]")
     ax.set_ylabel('Current (nA)')
     ax.set_xlabel('Channel')
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.savefig(outfolder+ '_byChannel.png')
+    plt.savefig(outfolder+wafer+ '_byChannel.png')
     plt.close('all')
-    fig2=plt.figure()
-    ax2 = fig2.add_subplot(111)
+    fig=plt.figure()
+    ax = fig.add_subplot(111)
     abscurrent = np.zeros((len(data)))
     abscurrent[:]= [abs(ele) for ele in (data[:,2])]
 
     badpad_mask = [(abscurrent[:]>mask_abov) ]# find the cells with current greater than 10000 when the voltage has reached 100
     badpads = data[tuple(badpad_mask)]
-    plot_Channels(badpads[:,1], corr, data, CV, name)
-    badcells = set(badpads[:,1])
-    test=np.zeros(len(data), dtype = bool)
-    test[:]= [ele not in badcells for ele in data[:,1]]
-    good_data=data[test]
+    badcells = tuple(set(badpads[:,1]))
+    #print (str(badcells))
+    #plot_Channels(badcells, corr, data, CV, name, wafer)
     for v,col in zip(voltages,colors):
-        v_mask = [good_data[:,0]==v]
-        v_data = good_data[tuple(v_mask)]
+        v_mask = [data[:,0]==v]
+        v_data = data[tuple(v_mask)]
+        msk= [(ele not in badcells) for ele in v_data[:,1]]
+        Current=v_data[:,2]
+        #print (str(Current))
+        Cells=v_data[:,1]
+        #print(str(Cells))
+        Current=Current[msk]
+        #print (str(Current))
+
+        Cells=Cells[msk]
+        #print (str(Cells))
+
         color = next(colors)
-        ax2.plot(v_data[:,1], v_data[:,2], color, label = str(v)+'V')
-    ax2.set_title('IV by Channel[With \'Bad\' Channls removed]')
-    ax2.set_ylabel('Current (nA)')
-    ax2.set_xlabel('Channel')
+        ax.plot(Cells, Current, color, label = str(v)+'V')
+    ax.set_title('IV by Channel[With \'Bad\' Channls removed]'+"[" +wafer+"]")
+    ax.set_ylabel('Current (nA)')
+    ax.set_xlabel('Channel')
 
 
-    box = ax2.get_position()
-    ax2.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
 
-    plt.savefig(outfolder+'_sortedByChannel.png')
+    plt.savefig(outfolder+wafer+'_sortedByChannel.png')
     plt.close('all')
-def plot_totalCurrent(data, name):
+def plot_totalCurrent(data, name,wafer):
     outfolder = name+"total_current/"
     checkAndMakeDir(outfolder)
     voltages = set(data[:,0])
@@ -98,24 +106,29 @@ def plot_totalCurrent(data, name):
     ax  = fig.add_subplot(111)
     colors = itertools.cycle(['r', 'b', 'g','m','c','y','k'])
     activepad_mask = [data[:,1]<199]
+    #print (str(activepad_mask))
     activepad=data[tuple(activepad_mask)]
     for v,col in zip(voltages,colors):
         v_mask = [activepad[:,0]==v]
         v_data = activepad[tuple(v_mask)]
         color = next(colors)
         ax.plot(v_data[:,1], v_data[:,4], color, label = str(v)+'V')
-    ax.set_title('Total Current')
+    ax.set_title('Total Current'+"[" +wafer+"]")
     ax.set_ylabel('Current (nA)')
     ax.set_xlabel('Channel')
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.savefig(outfolder+ '_TotalCurrent.png')
+    plt.savefig(outfolder+wafer+ '_TotalCurrent.png')
     
     plt.close('all')
-def plot_singleChannel(data, channel, name, t):
-    outfolder = name+"SingleChannel"+t+"_Uncorrected/"
+def plot_singleChannel(data, channel, name, t,wafer):
+    if t=="IV":
+        outfolder = name+"SingleChannel"+t+"/"
+    else:
+        outfolder = name+"SingleChannel"+t+"_Uncorrected/"
+
     checkAndMakeDir(outfolder)
     mask = [data[:,1]==channel]
     data=data[tuple(mask)]
@@ -124,16 +137,16 @@ def plot_singleChannel(data, channel, name, t):
     ax.plot(data[:,0], data[:,2])
     invCV= []
     if (t =='IV'):
-        ax.set_title('IV Channel: '+ str(channel))
+        ax.set_title('IV Channel: '+ str(int(channel))+"[" +wafer+"]")
         ax.set_xlabel('Voltage (V)')
         ax.set_ylabel('I(na)')
-        plt.savefig(outfolder+ '_Channel_' + str(channel)+t+'.png')
+        plt.savefig(outfolder+ '_Channel_' + str(int(channel))+t+'.png')
         plt.close('all')
     elif t=='CV':
-        ax.set_title('CV Channel: '+ str(channel))
+        ax.set_title('CV Channel: '+ str(int(channel))+"[" +wafer+"]")
         ax.set_xlabel('Voltage (V)')
         ax.set_ylabel('C(pF)')
-        plt.savefig(outfolder+ '_Channel_' + str(channel)+t+'.png')
+        plt.savefig(outfolder+wafer+'_Channel_' + str(int(channel))+t+'.png')
         plt.close('all')
 
         for x in data[:,2]:
@@ -141,15 +154,15 @@ def plot_singleChannel(data, channel, name, t):
         fig2 = plt.figure()
         ax2 = fig2.add_subplot(111)
         ax2.plot(data[:,0], invCV[:])
-        ax2.set_title('InvSq CV, Channel: '+ str(channel))
+        ax2.set_title('InvSq CV, Channel: '+ str(int(channel))+"[" +wafer+"]")
         ax2.set_xlabel('Voltage (V)')
         ax2.set_ylabel('1/C^2(pF)')
-        plt.savefig(outfolder+ '_Channel_INVCV' + str(channel)+t+'.png')
+        plt.savefig(outfolder+ wafer+'_Channel_INVCV' + str(int(channel))+t+'.png')
         plt.close('all')
 
 
     
-def plot_CV_Corr(data, corr, channel, name):
+def plot_CV_Corr(data, corr, channel, name,wafer):
     outfolder = name+"CVCorrected_Individual_Channels/"
     checkAndMakeDir(outfolder)
     mask= [data[:,1]==channel]
@@ -159,44 +172,54 @@ def plot_CV_Corr(data, corr, channel, name):
     corr = corr[tuple(mask)]
     invCVSq=[]
     CVcorr = []
+    #print ("Plotting Channel="+str(int(channel)))
+    #print(str(data[:,0]))
     for i in range(len(data[:,0])):
-        if data[i,0]>-220:
-            iCor=corr[corr[:,0]==data[i,0]]
+        voltage=data[i,0]
+        if (voltage%10)!=0:
+            #print ("Mod 10 test)"+str(voltage))
+            voltage =voltage +(voltage%10)
+            #print ("Mod 10 test)"+str(voltage))
+        if voltage>-220:
+            iCor=corr[corr[:,0]==voltage]
         else: iCor=corr[corr[:,0]==-220]
         if len(iCor)<1:
-            print ("CV Correction missing for V="+str(data[i,0])+"V. Terminating CV Correction.")
+            #print ("CV Correction missing for V="+str(data[i,0])+"V. Terminating CV Correction.")
             break
+        #print ("Data="+str(data[i,2]))
+        #print ("Cor="+str(iCor[0,2]))
+
         iData=(data[i,2])-((iCor[0,2]))
         CVcorr.append(iData)
         invCVSq.append(1/(iData**2))
-        if data[i,0]==-200:
-            print ("Cell " +str(channel)+" Cpf = " + str(iData))
+        #if data[i,0]==-200:
+        #print ("Cell " +str(int(channel))+" Cpf = " + str(iData))
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(data[:,0], CVcorr[:])
-    ax.set_title('CV Channel: '+ str(channel))
+    ax.set_title('CORRECTED CV Channel: '+ str(int(channel))+"[" +wafer+"]")
     ax.set_xlabel('Voltage (V)')
     ax.set_ylabel('C(pF)')
-    plt.savefig(outfolder+ '_Channel_' + str(channel)+'_Corrected.png')
+    plt.savefig(outfolder+ '_Channel_' + str(int(channel))+'_Corrected.png')
     plt.close('all')
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(111)
 
     ax2.plot(data[:,0], invCVSq[:])
-    ax2.set_title('CORRECTED invSq CV Channel: '+ str(channel))
+    ax2.set_title('CORRECTED invSq CV Channel: '+ str(int(channel))+"[" +wafer+"]")
     ax2.set_xlabel('Voltage (V)')
     ax2.set_ylabel('1/C^2(pF)')
-    plt.savefig(outfolder+ '_Channel_INVCVSq_' + str(channel)+'_Corrected.png')
+    plt.savefig(outfolder+wafer+ '_Channel_INVCVSq_' + str(int(channel))+'_Corrected.png')
     plt.close('all')
 
-def plot_Channels(channels, corr,IV_data, CV_data, fi):
+def plot_Channels(channels, corr,IV_data, CV_data, fi,wafer):
     for c in channels:
-        plot_singleChannel(IV_data, c, fi, 'IV')
-        plot_singleChannel(CV_data, c, fi, 'CV')
-        plot_CV_Corr(CV_data, corr, c, fi)
+        plot_singleChannel(IV_data, c, fi, 'IV',wafer)
+        plot_singleChannel(CV_data, c, fi, 'CV',wafer)
+        plot_CV_Corr(CV_data, corr, c, fi,wafer)
 
-def plot_Humidity(data, fi):
-    outfolder = fi+"Enviromental_Data/"
+def plot_Environmental(data, fi):
+    outfolder = fi+"Environmental_Data/"
     checkAndMakeDir(outfolder)
     humidity = data[:,8]
     time = data[:,6]
@@ -214,11 +237,11 @@ def plot_Humidity(data, fi):
     # make a plot with different y-axis using second axis object
     ax2.plot(time, humidity,color="blue")
     ax2.set_ylabel("Humidity (%)",color="blue",fontsize=14)
-    ax2.set_title("Envirmoental data")
+    ax2.set_title("Environmental data")
     ax2.set_ylim(45,53)
 
     # save the plot as a file
-    fig.savefig(outfolder+'_Enviromental.png',
+    fig.savefig(outfolder+'_Environmental.png',
             format='png',
             dpi=100,
             bbox_inches='tight')
@@ -242,8 +265,8 @@ def calc_GRIV(data, fi):
         I_Sum.append(abs(sum_Current))
         I_GR.append(abs(total_Current-sum_Current))
     fig,ax = plt.subplots()
-    print (str(I_Total[:]))
-    print (str(I_Sum[:]))
+    #print (str(I_Total[:]))
+    #print (str(I_Sum[:]))
     ax.plot(voltages, I_Total, label="Total Current at 199",color="red")
     ax.plot(voltages, I_Sum, label="Sum of currents",color = "blue")
     ax.plot(voltages, I_GR, label = "GR(Est)", color = "black")
@@ -258,14 +281,14 @@ def calc_GRIV(data, fi):
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.savefig(outfolder+ '_GR_EST.png')
     plt.close('all')
-def plot_average_profile_IV(data, fi, threshold, isHD):
+def plot_average_profile_IV(data, fi, threshold, isHD,wafer):
     outfolder = fi+"Average_IV_Profile/"
     checkAndMakeDir(outfolder)
     voltages = set(data[:,0])
     voltages = sorted(voltages)
     if isHD:
         small_pads = [1,2,3,4,5,6,7,8,9,10,12,13,26,42,57,73,91,109,128,148,
-        171,193,217,241,265,288,310,3301,349,367,385,402,418,432,
+        171,193,217,241,265,288,310,330,349,367,385,402,418,432,
         433,435,436,437,438,439,
         440,441,442,443,444,431,417,401,384,366,448,329,309,287,264,240,
         216,192,170,147,127,108,90,72,46,41,25,29,30,36,37,87,88,150,151,158,157,
@@ -307,17 +330,17 @@ def plot_average_profile_IV(data, fi, threshold, isHD):
     ax.fill_between(voltages, lower, upper, alpha=0.2)
     ax.plot(voltages, averages, "-")
     if threshold<-1:
-        ax.set_title("Average IV Profile")
+        ax.set_title("Average IV Profile"+"[" +wafer+"]")
         ax.set_ylabel("Current (nA)")
         ax.set_xlabel("Voltage (V)")
-        plt.savefig(outfolder+ '_Average_Profile_IV.png')
+        plt.savefig(outfolder+wafer+ '_Average_Profile_IV.png')
     else:
-        ax.set_title("Average IVProfile [Highchannels removed]")
+        ax.set_title("Average IVProfile [Highchannels removed]"+"[" +wafer+"]")
         ax.set_ylabel("Current (nA)")
         ax.set_xlabel("Voltage (V)")
-        plt.savefig(outfolder+ '_Average_Profile_IV_Highchannels_Removed.png')
+        plt.savefig(outfolder+wafer+ '_Average_Profile_IV_Highchannels_Removed.png')
     plt.close('all')
-def plot_average_profile_CV(data, fi, corr, isHD):
+def plot_average_profile_CV(data, fi, corr, isHD, wafer):
     outfolder = fi+"Average_CV_Profile/"
     checkAndMakeDir(outfolder)
 
@@ -350,15 +373,20 @@ def plot_average_profile_CV(data, fi, corr, isHD):
     for v in range(0,len(voltages)):
         mask = [large_pads[:,0]==voltages[v]]
         vstep=large_pads[tuple(mask)]
-        if voltages[v]>-220:
-            mask = [corr_largepad[:,0]==voltages[v]]
+        voltage=voltages[v]
+        if (voltage%10)!=0:
+            voltage =voltage -(voltage%10)
+        if voltage>-220:
+            mask = [corr_largepad[:,0]==voltage]
         else: mask = [corr_largepad[:,0]==-220]
         corr_vstep=corr_largepad[tuple(mask)]
         if len(corr_vstep)<1:
-            print ("CV Correction missing for V="+str(voltages[v])+"V. Terminating CV Correction\n")
+            #print ("CV Correction missing for V="+str(voltages[v])+"V. Terminating CV Correction\n")
             break
         CV_corr_vstep = np.zeros((len(vstep),2), float)
         for i in range(len(vstep[:,2])):
+
+
             CV_corr_vstep[i,0]=vstep[i, 2]-corr_vstep[i, 2]
             CV_corr_vstep[i,1]=CV_corr_vstep[i,0]**-2
         m= np.average(CV_corr_vstep[:,0])
@@ -379,19 +407,19 @@ def plot_average_profile_CV(data, fi, corr, isHD):
     # make a plot
     ax.fill_between(voltages, CV_corr[:,2], CV_corr[:,1],  label=r'$\sigma$',alpha=0.2)
     ax.plot(voltages, CV_corr[:,0], "-",label = r'Average')
-    ax.set_title("Average CV Profile[Corrected]")
+    ax.set_title("Average CV Profile[Corrected]"+"[" +wafer+"]")
     ax.set_ylabel("C (pF)")
     ax.set_xlabel("Voltage (V)")
-    plt.savefig(fi+ '_Average_Profile_CV_CORRECTED.png')
+    plt.savefig(outfolder+wafer+ '_Average_Profile_CV_CORRECTED.png')
     plt.close('all')
     fig,ax = plt.subplots()
     # make a plot
     ax.fill_between(voltages, CV_corr[:,5], CV_corr[:,4],  label=r'$\sigma$',alpha=0.2)
     ax.plot(voltages, CV_corr[:,3], "-",label = r'Average')
-    ax.set_title("Average CV-2 Profile[Corrected]")
+    ax.set_title("Average CV-2 Profile[Corrected]"+"[" +wafer+"]")
     ax.set_ylabel(r"$C^{-2} (pF^{-2})$")
     ax.set_xlabel("Voltage (V)")
-    plt.savefig(outfolder+ '_Average_Profile_CV-2_CORRECTED.png')
+    plt.savefig(outfolder+ wafer+'_Average_Profile_CV-2_CORRECTED.png')
     plt.close('all')
     ##
     ax.fill_between(voltages, CV_avg[:,2], CV_avg[:,1],  label=r'$\sigma$',alpha=0.2)
@@ -399,12 +427,11 @@ def plot_average_profile_CV(data, fi, corr, isHD):
     ax.set_title("Average CV Profile")
     ax.set_ylabel("C (pF)")
     ax.set_xlabel("Voltage (V)")
-    plt.savefig(outfolder+ '_Average_Profile_CV.png')
+    plt.savefig(outfolder+wafer+ '_Average_Profile_CV.png')
     plt.close('all')
-    fig,ax = plt.subplots()
 
-def plot_CV_ByChannel(data, name, wafer):
-    checkAndMakeDir(name+"CV_ByChannel/")
+def plot_CV_ByChannel(data, outfi, wafer):
+    checkAndMakeDir(outfi+"CV_ByChannel/")
     voltages = set(data[:,0])
     voltages = sorted(voltages)
     fig = plt.figure()
@@ -424,6 +451,6 @@ def plot_CV_ByChannel(data, name, wafer):
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.savefig(name+ 'CV_ByChannel/CapacitanceBy channel.png')
+    plt.savefig(outfi+"CV_ByChannel/"+wafer +'_CV_Channel_.png')
     
     plt.close('all')
