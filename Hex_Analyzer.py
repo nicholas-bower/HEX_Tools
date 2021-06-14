@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import os
 import glob
 from matplotlib import rc
+import matplotlib.ticker as plticker
+
 
 #rc('font', **{'family':'serif','serif':['Palatino']})
 #rc('text', usetex=True)
@@ -45,9 +47,12 @@ def plot_IV_By_Channel(data, name, mask_abov, corr, CV,wafer):
     colors = itertools.cycle(['r', 'b', 'g','m','c','y','k'])
     activepad_mask = [data[:,1]<199]
     data=data[tuple(activepad_mask)]
+    channels = set(data[:,1])
     for v,col in zip(voltages,colors):
         v_mask = [data[:,0]==v]
         v_data = data[tuple(v_mask)]
+        Breakdownmask = [v_data[:,2]!=-1000000]
+        v_data=v_data[tuple(Breakdownmask)]
         color = next(colors)
         ax.plot(v_data[:,1], v_data[:,2], color, label = str(v)+'V')
     ax.set_title('IV by Channel'+"[" +wafer+"]")
@@ -59,6 +64,22 @@ def plot_IV_By_Channel(data, name, mask_abov, corr, CV,wafer):
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.savefig(outfolder+wafer+ '_byChannel.png')
     plt.close('all')
+    fig = plt.figure()
+    ax  = fig.add_subplot(111)
+    for c in channels:
+        v_mask = [data[:,1]==c]
+        v_data = data[tuple(v_mask)]
+        color = next(colors)
+        ax.plot(abs(v_data[:,0]), abs(v_data[:,2]), color, label = "Channel"+str(c))
+    ax.set_title('IV (All Channels)'+"[" +wafer+"]")
+    ax.set_ylabel('Current (nA)')
+    ax.set_xlabel('Voltage')
+    plt.yscale("log")
+    loc = plticker.MultipleLocator(base=100.0) # this locator puts ticks at regular intervals
+    ax.xaxis.set_major_locator(loc)
+
+    plt.savefig(outfolder+wafer+ '_AllChannels.png')
+    plt.close('all')
     fig=plt.figure()
     ax = fig.add_subplot(111)
     abscurrent = np.zeros((len(data)))
@@ -68,7 +89,7 @@ def plot_IV_By_Channel(data, name, mask_abov, corr, CV,wafer):
     badpads = data[tuple(badpad_mask)]
     badcells = tuple(set(badpads[:,1]))
     #print (str(badcells))
-    #plot_Channels(badcells, corr, data, CV, name, wafer)
+    plot_Channels(badcells, corr, data, CV, name, wafer)
     for v,col in zip(voltages,colors):
         v_mask = [data[:,0]==v]
         v_data = data[tuple(v_mask)]
@@ -104,6 +125,7 @@ def plot_totalCurrent(data, name,wafer):
     voltages = sorted(voltages)
     fig = plt.figure()
     ax  = fig.add_subplot(111)
+
     colors = itertools.cycle(['r', 'b', 'g','m','c','y','k'])
     activepad_mask = [data[:,1]<199]
     #print (str(activepad_mask))
@@ -121,7 +143,22 @@ def plot_totalCurrent(data, name,wafer):
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.savefig(outfolder+wafer+ '_TotalCurrent.png')
-    
+    plt.close('all')
+    fig = plt.figure()
+
+    ax  = fig.add_subplot(111)
+
+    activepad=data[tuple(activepad_mask)]
+    channel_mask= [data[:,1]==1]
+    single_channel_total=data[tuple(channel_mask)]
+    ax.plot(abs(single_channel_total[:,0]), abs(single_channel_total[:,4]), 'r', label = "")
+    ax.set_title('Total Current'+"[" +wafer+"]")
+    ax.set_ylabel('Current (nA)')
+    ax.set_xlabel('Voltage (V)')
+
+    plt.savefig(outfolder+wafer+ '_TotalCurrent_ByVotlage.png')
+    plt.yscale("log")
+    plt.savefig((outfolder+wafer+ '_TotalCurrent_ByVotlage_LOGY.png'))
     plt.close('all')
 def plot_singleChannel(data, channel, name, t,wafer):
     if t=="IV":
@@ -134,15 +171,19 @@ def plot_singleChannel(data, channel, name, t,wafer):
     data=data[tuple(mask)]
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.plot(data[:,0], data[:,2])
     invCV= []
     if (t =='IV'):
+
+        ax.plot(data[:,0], data[:,2])
+
         ax.set_title('IV Channel: '+ str(int(channel))+"[" +wafer+"]")
         ax.set_xlabel('Voltage (V)')
         ax.set_ylabel('I(na)')
         plt.savefig(outfolder+ '_Channel_' + str(int(channel))+t+'.png')
         plt.close('all')
     elif t=='CV':
+        ax.plot(data[:,0], data[:,2])
+
         ax.set_title('CV Channel: '+ str(int(channel))+"[" +wafer+"]")
         ax.set_xlabel('Voltage (V)')
         ax.set_ylabel('C(pF)')
@@ -238,7 +279,7 @@ def plot_Environmental(data, fi):
     ax2.plot(time, humidity,color="blue")
     ax2.set_ylabel("Humidity (%)",color="blue",fontsize=14)
     ax2.set_title("Environmental data")
-    ax2.set_ylim(45,53)
+    ax2.set_ylim(0,20)
 
     # save the plot as a file
     fig.savefig(outfolder+'_Environmental.png',
@@ -454,3 +495,4 @@ def plot_CV_ByChannel(data, outfi, wafer):
     plt.savefig(outfi+"CV_ByChannel/"+wafer +'_CV_Channel_.png')
     
     plt.close('all')
+

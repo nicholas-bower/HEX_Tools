@@ -3,15 +3,18 @@ import itertools
 import matplotlib.pyplot as plt
 from Hex_Analyzer import *
 
-filenameIV = 'HPK_8in_198ch_2019_1014_FSU_crossscheck_2_8_21_IV'
+
+
+filenameIV = 'HPK_8in_198ch_2019_1014_Feb12_DoubleTest_1_IV'
 filepathIV='/mnt/c/Users/nicho/Downloads/'
 
 
 filepathCV='/mnt/c/Users/nicho/Downloads/'
-filenameCV = 'HPK_8in_198ch_2019_1014_FSU_crossscheck_2_8_21_CV'  
-wafernumber = 'HPK_198ch_1014_Crosscheck'
+filenameCV = 'HPK_8in_198ch_2019_10_538_offDF_CV'  
+wafernumber = '10_538_offDF'
 OutFile_Dir = '/mnt/c/Users/nicho/Downloads/'+wafernumber+'/'
 checkAndMakeDir(OutFile_Dir)
+
 outFileName = OutFile_Dir
 corr= readfile('/mnt/c/Users/nicho/Downloads/HPK_8in_198ch_2019_openCV_2_2_21_CV.txt')
 #corr = readfile('/mnt/c/Users/nicho/Downloads/HPK_8in_444ch_CV_CorrectionDec_15_2020_CV.txt')
